@@ -64,7 +64,11 @@ chart, so the logic is visible to anyone using it.
 
 | Learner profile | Sign in |
 | --- | --- |
-| <img src="docs/screenshots/profile.png" width="600" alt="Learner profile form with level and goal" /> | <img src="docs/screenshots/login.png" width="600" alt="Sign-in page with Google option" /> |
+| <img src="docs/screenshots/profile.png" width="600" alt="Learner profile form with level and goal" /> | <img src="docs/screenshots/login.png" width="600" alt="Sign-in page with email/password and Google option" /> |
+
+| Create an account |
+| --- |
+| <img src="docs/screenshots/signup.png" width="600" alt="Sign-up page for a new account" /> |
 
 ---
 
