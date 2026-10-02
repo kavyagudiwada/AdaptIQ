@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { cn } from "@/utils/cn";
+import { API_URL } from "@/services/api";
 
 /**
  * Original LearnAI mark for the Google button: a four-point sparkle, kept
@@ -67,9 +68,9 @@ export function GoogleSignInButton({
     }
     setBusy(true);
     // Full navigation: the OAuth round trip returns to the frontend origin.
-    window.location.assign(
-      `${import.meta.env.VITE_API_URL ?? "http://localhost:8000"}/api/auth/google/start`,
-    );
+    // Same-origin by default (deployed single-origin); dev machines override
+    // with VITE_API_URL in frontend/.env (e.g. http://127.0.0.1:8000).
+    window.location.assign(`${API_URL}/api/auth/google/start`);
   }
 
   return (
