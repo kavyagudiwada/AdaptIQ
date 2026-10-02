@@ -95,7 +95,14 @@ async def google_callback(
     On any failure the user is returned to the login page with a `reason` the
     frontend can explain, rather than being shown a raw provider error.
     """
-    frontend = settings.frontend_url.rstrip("/")
+    # Single-origin deployment: the backend serves the SPA, so the OAuth round
+    # trip must come back to whichever origin the user actually reached (e.g.
+    # https://adaptiq-fh88.onrender.com), never a hard-coded dev URL. Standalone
+    # dev still targets settings.frontend_url (e.g. http://localhost:5173).
+    if settings.frontend_dir:
+        frontend = str(request.base_url).rstrip("/")
+    else:
+        frontend = settings.frontend_url.rstrip("/")
 
     def back_to_login(reason: str | None = None) -> RedirectResponse:
         target = f"{frontend}/auth/google/callback"

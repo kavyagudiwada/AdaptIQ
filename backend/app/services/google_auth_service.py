@@ -7,9 +7,9 @@ Design notes:
   then hand the frontend a short-lived **one-time code**. The frontend POSTs
   that code to `/auth/google/exchange` to collect the real token. Tokens in
   query strings leak into history, referrers and access logs, so we avoid them.
-* The one-time code store is in-memory. That is correct for the single-process
-  deployment this project targets; a multi-worker deployment would need Redis
-  or a signed, self-expiring token instead.
+* The `state` and the one-time code are both short-lived **signed JWTs**, not
+  process-local map entries, so the flow survives container recycles and any
+  number of workers without a shared cache (see `new_state` / `issue_exchange_code`).
 * Google-only accounts have no password, so `Account.password_hash` is NULL and
   password sign-in must not be offered for them (see `auth_service.authenticate`).
 """
@@ -18,11 +18,11 @@ from __future__ import annotations
 
 import logging
 import secrets
-import time
-from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
 import httpx
+import jwt
 from fastapi import HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,7 +30,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.models import Account
 from app.schemas.auth import AuthTokenOut
-from app.services.auth_service import _token_response, create_access_token
+from app.services.auth_service import (_token_response, create_access_token,
+                                       signing_key)
 
 logger = logging.getLogger(__name__)
 
@@ -46,41 +47,6 @@ HTTP_TIMEOUT = 20.0
 # one-time code may be exchanged for a token.
 STATE_TTL_SECONDS = 600
 EXCHANGE_CODE_TTL_SECONDS = 120
-
-# Small bounded stores. A leak here is short-lived and single-use, so a simple
-# dict with expiry sweeping is proportionate and has no infrastructure cost.
-_MAX_ENTRIES = 512
-
-
-@dataclass
-class _Entry:
-    value: str
-    expires_at: float
-
-
-_states: dict[str, _Entry] = {}
-_exchange_codes: dict[str, _Entry] = {}
-
-
-def _put(store: dict[str, _Entry], key: str, value: str, ttl: int) -> None:
-    now = time.monotonic()
-    for existing_key, entry in list(store.items()):
-        if entry.expires_at <= now:
-            del store[existing_key]
-    if len(store) >= _MAX_ENTRIES:
-        oldest = min(store.items(), key=lambda item: item[1].expires_at)[0]
-        del store[oldest]
-    store[key] = _Entry(value=value, expires_at=now + ttl)
-
-
-def _take(store: dict[str, _Entry], key: str) -> str | None:
-    """Read and delete in one step: every code is strictly single-use."""
-    entry = store.pop(key, None)
-    if entry is None:
-        return None
-    if entry.expires_at <= time.monotonic():
-        return None
-    return entry.value
 
 
 def require_google_enabled() -> None:
@@ -102,16 +68,34 @@ def callback_url(request: Request) -> str:
 
 
 def new_state() -> str:
-    state = secrets.token_urlsafe(24)
-    _put(_states, state, state, STATE_TTL_SECONDS)
-    return state
+    """Mint the CSRF `state` carried through the Google round trip.
+
+    A short-lived signed JWT instead of an entry in a process-local map, so the
+    value survives container recycles and can be verified by any worker. The
+    signature binds it to this installation and this signing key; expiry keeps
+    stale flows from being redeemed.
+    """
+    now = datetime.now(timezone.utc)
+    payload = {
+        "purpose": "google-oauth-state",
+        "nonce": secrets.token_urlsafe(12),
+        "iat": int(now.timestamp()),
+        "exp": int((now + timedelta(seconds=STATE_TTL_SECONDS)).timestamp()),
+    }
+    return jwt.encode(payload, signing_key(), algorithm=settings.jwt_algorithm)
 
 
 def consume_state(state: str | None) -> bool:
     """Reject a callback whose state we did not issue (CSRF protection)."""
     if not state:
         return False
-    return _take(_states, state) is not None
+    try:
+        payload = jwt.decode(
+            state, signing_key(), algorithms=[settings.jwt_algorithm]
+        )
+    except jwt.InvalidTokenError:
+        return False
+    return payload.get("purpose") == "google-oauth-state"
 
 
 def authorization_url(state: str, request: Request) -> str:
@@ -256,15 +240,45 @@ async def resolve_google_identity(
 
 
 def issue_exchange_code(account: Account) -> str:
-    """Mint the single-use code the frontend swaps for a bearer token."""
-    code = secrets.token_urlsafe(32)
-    _put(_exchange_codes, code, str(account.id), EXCHANGE_CODE_TTL_SECONDS)
-    return code
+    """Mint the one-time code the frontend swaps for a bearer token.
+
+    The code is a short-lived signed JWT, not an entry in a process-local map,
+    so it survives container recycles (Render free instances restart at any
+    time). Its brevity and signature prevent reuse and forgery; the account id
+    is carried inside, so redemption needs no shared store.
+    """
+    now = datetime.now(timezone.utc)
+    payload = {
+        "sub": str(account.id),
+        "purpose": "google-signin-exchange",
+        "iat": int(now.timestamp()),
+        "exp": int((now + timedelta(seconds=EXCHANGE_CODE_TTL_SECONDS)).timestamp()),
+    }
+    return jwt.encode(payload, signing_key(), algorithm=settings.jwt_algorithm)
 
 
 async def redeem_exchange_code(session: AsyncSession, code: str) -> AuthTokenOut:
-    account_id = _take(_exchange_codes, code)
-    if account_id is None:
+    try:
+        payload = jwt.decode(
+            code, signing_key(), algorithms=[settings.jwt_algorithm]
+        )
+    except jwt.ExpiredSignatureError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="That sign-in link has expired. Please try again.",
+        ) from exc
+    except jwt.InvalidTokenError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="That sign-in link has expired. Please try again.",
+        ) from exc
+    if payload.get("purpose") != "google-signin-exchange":
+        raise HTTPException(
+            status_code=400,
+            detail="That sign-in link has expired. Please try again.",
+        )
+    account_id = payload.get("sub")
+    if not account_id:
         raise HTTPException(
             status_code=400,
             detail="That sign-in link has expired. Please try again.",
