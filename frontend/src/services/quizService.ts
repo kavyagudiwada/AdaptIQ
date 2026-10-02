@@ -10,10 +10,12 @@ import type {
 export async function generateQuiz(
   learnerId: number,
   topic?: string,
+  seed?: string,
 ): Promise<Quiz> {
   const { data } = await api.post<Quiz>("/quiz/generate", {
     learner_id: learnerId,
     topic: topic ?? null,
+    seed: seed ?? null,
   });
   return data;
 }

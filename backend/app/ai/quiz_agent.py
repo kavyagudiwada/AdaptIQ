@@ -165,6 +165,7 @@ async def generate_questions(
     difficulty: str,
     level: str,
     weak: list[str],
+    seed: str | None = None,
 ) -> tuple[list[dict[str, Any]], str]:
     """Return (questions, ai_mode)."""
     if not subtopic:
@@ -198,12 +199,15 @@ async def generate_questions(
 
     if settings.ai_enabled:
         logger.info("Quiz generation fell back to the offline bank.")
+    # A fresh seed (sent on every "New set") rotates the deterministic offline
+    # pick so a learner who clicks again gets a genuinely different set.
+    rotation = f":{seed}" if seed else ""
     return (
         _pick_demo(
             topic=topic,
             subtopic=subtopic,
             difficulty=difficulty,
-            seed=f"{learner_id}:{display_name(topic)}",
+            seed=f"{learner_id}:{display_name(topic)}{rotation}",
         ),
         "offline",
     )

@@ -10,6 +10,9 @@ Difficulty = Literal["easy", "medium", "hard"]
 class QuizGenerateRequest(BaseModel):
     learner_id: int = Field(gt=0)
     topic: str | None = Field(default=None, max_length=120)
+    # Freshness seed: a new value asks for a different set even in offline mode,
+    # where selection would otherwise be deterministic per learner + topic.
+    seed: str | None = Field(default=None, max_length=120)
 
 
 class QuizQuestionOut(BaseModel):

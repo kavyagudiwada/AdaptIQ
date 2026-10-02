@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Gauge,
   Lightbulb,
+  Map as MapIcon,
   RefreshCw,
   Target,
   TrendingUp,
@@ -23,10 +24,14 @@ export function QuizResultView({
   result,
   onNext,
   nextLoading,
+  onGenerateRoadmap,
+  roadmapLoading = false,
 }: {
   result: QuizResult;
   onNext: () => void;
   nextLoading: boolean;
+  onGenerateRoadmap?: () => void;
+  roadmapLoading?: boolean;
 }) {
   const moved =
     result.difficulty_changed &&
@@ -125,8 +130,8 @@ export function QuizResultView({
             <p className="flex items-start gap-2 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
               <RefreshCw className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
               <span>
-                These results mean your roadmap is out of date. Head to the roadmap and choose{" "}
-                <span className="font-semibold">Adapt my plan</span> to re-prioritise your topics.
+                These results mean your roadmap is out of date. Generate a new one below so your
+                plan reflects what you just practised.
               </span>
             </p>
           ) : null}
@@ -312,7 +317,18 @@ export function QuizResultView({
         </CardBody>
       </Card>
 
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-end gap-3">
+        {onGenerateRoadmap ? (
+          <Button
+            variant="secondary"
+            size="lg"
+            loading={roadmapLoading}
+            onClick={onGenerateRoadmap}
+            icon={<MapIcon className="h-4 w-4" />}
+          >
+            Generate roadmap
+          </Button>
+        ) : null}
         <Button size="lg" loading={nextLoading} onClick={onNext} icon={<Target className="h-4 w-4" />}>
           Start {to.label} set
         </Button>

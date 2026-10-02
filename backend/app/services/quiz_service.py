@@ -169,6 +169,7 @@ async def generate_quiz(
         difficulty=difficulty,
         level=learner.current_level,
         weak=weak,
+        seed=payload.seed,
     )
 
     return QuizOut(

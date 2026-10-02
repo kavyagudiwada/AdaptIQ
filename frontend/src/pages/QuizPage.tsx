@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowRight, RefreshCw, Target, Wand2 } from "lucide-react";
 import { Button } from "@/components/common/Button";
@@ -10,7 +10,7 @@ import { QuizResultView } from "@/components/quiz/QuizResultView";
 import { useLearner } from "@/hooks/useLearner";
 import { toFriendlyError } from "@/services/api";
 import { generateQuiz, submitQuiz } from "@/services/quizService";
-import { getRoadmap } from "@/services/roadmapService";
+import { generateRoadmap, getRoadmap } from "@/services/roadmapService";
 import type { Quiz, QuizAnswerInput, QuizResult } from "@/types";
 import { cn } from "@/utils/cn";
 
@@ -27,7 +27,9 @@ export default function QuizPage() {
   const [result, setResult] = useState<QuizResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [roadmapping, setRoadmapping] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const freshSeedRef = useRef(0);
 
   const requestedTopic = searchParams.get("topic");
 
@@ -55,15 +57,22 @@ export default function QuizPage() {
   }, [learner, requestedTopic]);
 
   const load = useCallback(
-    async (targetTopic?: string) => {
+    async (targetTopic?: string, fresh = false) => {
       if (!learner) return;
+      if (fresh) freshSeedRef.current += 1;
       setLoading(true);
       setError(null);
       setResult(null);
       setAnswers({});
       setConfidence({});
       try {
-        setQuiz(await generateQuiz(learner.id, targetTopic ?? topic ?? undefined));
+        setQuiz(
+          await generateQuiz(
+            learner.id,
+            targetTopic ?? topic ?? undefined,
+            fresh ? String(freshSeedRef.current) : undefined,
+          ),
+        );
       } catch (err) {
         setError(toFriendlyError(err));
       } finally {
@@ -126,6 +135,20 @@ export default function QuizPage() {
     setSearchParams({ topic: next });
   }
 
+  async function onGenerateRoadmap() {
+    if (!learner) return;
+    setRoadmapping(true);
+    setError(null);
+    try {
+      await generateRoadmap(learner.id);
+      navigate("/roadmap");
+    } catch (err) {
+      setError(toFriendlyError(err));
+    } finally {
+      setRoadmapping(false);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-3xl">
       <PageHeader
@@ -138,7 +161,7 @@ export default function QuizPage() {
             <Button
               variant="secondary"
               size="sm"
-              onClick={() => void load()}
+              onClick={() => void load(undefined, true)}
               disabled={loading || submitting}
               icon={<RefreshCw className="h-3.5 w-3.5" />}
             >
@@ -182,7 +205,9 @@ export default function QuizPage() {
         <QuizResultView
           result={result}
           nextLoading={loading}
-          onNext={() => void load()}
+          onNext={() => void load(undefined, true)}
+          roadmapLoading={roadmapping}
+          onGenerateRoadmap={() => void onGenerateRoadmap()}
         />
       ) : quiz && !loading ? (
         <Card>
