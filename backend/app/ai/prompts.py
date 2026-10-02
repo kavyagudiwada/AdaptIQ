@@ -288,6 +288,10 @@ Rules:
 - The example must be concrete and runnable-looking, not abstract.
 - If the learner is a beginner, use analogies and everyday language.
 - If advanced, include mathematics, assumptions and limitations.
+- Write every formula in LaTeX math delimiters so it renders properly: inline
+  math as $...$ and a standalone equation on its own line as $$...$$ (e.g.
+  "The slope is $\\hat{\\beta} = \\frac{\\text{cov}(x, y)}{\\text{var}(x)}$"). Do NOT leave
+  maths as plain prose like "x squared plus y".
 - Address the learner directly and reference their goal.
 - No markdown outside the JSON, JSON only."""
 

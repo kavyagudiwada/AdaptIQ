@@ -3,14 +3,44 @@
  *
  * The tutor returns markdown, but pulling in a full parser is unnecessary for
  * an MVP. This handles the subset we actually emit: headings, bold, inline
- * code, fenced code blocks, bullet lists and paragraphs.
+ * code, fenced code blocks, bullet lists, paragraphs, and inline / display
+ * mathematics written in LaTeX delimiters ($...$ and $$...$$).
  */
 import { Fragment, type ReactNode } from "react";
+import katex from "katex";
+import "katex/dist/katex.min.css";
 
+const KATEX_OPTIONS = {
+  throwOnError: false,
+  strict: false,
+};
+
+/** Render one LaTeX snippet (without the surrounding $ markers). */
+function renderMath(latex: string, display: boolean): ReactNode {
+  const html = katex.renderToString(latex, {
+    ...KATEX_OPTIONS,
+    displayMode: display,
+  });
+  return (
+    <span
+      // KaTeX typesets into the HTML we generate above; the outer span is a
+      // stable mount point so we never need dangerouslySetInnerHTML twice.
+      className={display ? "katex-display block" : "katex-inline"}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
+}
+
+/**
+ * Split a line into plain text / code / bold / inline-math segments.
+ *
+ * Order matters: code first so ** or $ inside backticks is left alone, bold
+ * before math so equations containing `**` still parse, inline math last so we
+ * match the shortest `$...$` span on the line.
+ */
 function renderInline(text: string, keyPrefix: string): ReactNode[] {
   const nodes: ReactNode[] = [];
-  // Order matters: code first so ** inside backticks is left alone.
-  const pattern = /(`[^`]+`)|(\*\*[^*]+\*\*)/g;
+  const pattern = /(`[^`]+`)|(\*\*[^*]+\*\*)|(\$[^$`]+\$)/g;
   let last = 0;
   let match: RegExpExecArray | null;
   let i = 0;
@@ -29,11 +59,17 @@ function renderInline(text: string, keyPrefix: string): ReactNode[] {
           {token.slice(1, -1)}
         </code>,
       );
-    } else {
+    } else if (token.startsWith("**")) {
       nodes.push(
         <strong key={`${keyPrefix}-b${i}`} className="font-semibold text-ink-900">
           {token.slice(2, -2)}
         </strong>,
+      );
+    } else {
+      nodes.push(
+        <Fragment key={`${keyPrefix}-m${i}`}>
+          {renderMath(token.slice(1, -1), false)}
+        </Fragment>,
       );
     }
     last = match.index + token.length;
@@ -49,6 +85,7 @@ export function Markdown({ text, className }: { text: string; className?: string
   let listBuffer: string[] = [];
   let inCode = false;
   let codeBuffer: string[] = [];
+  let mathBuffer: string[] = [];
 
   const flushList = (key: string) => {
     if (listBuffer.length === 0) return;
@@ -62,10 +99,25 @@ export function Markdown({ text, className }: { text: string; className?: string
     listBuffer = [];
   };
 
+  const flushMath = (key: string) => {
+    if (mathBuffer.length === 0) return;
+    out.push(
+      <div key={key} className="my-3 flex justify-center">
+        {renderMath(
+          mathBuffer.join("\n").replace(/^\$\$|\$\$$/g, "").trim(),
+          true,
+        )}
+      </div>,
+    );
+    mathBuffer = [];
+  };
+
   blocks.forEach((raw, idx) => {
     const line = raw.replace(/\s+$/, "");
 
     if (line.trim().startsWith("```")) {
+      flushList(`ul-${idx}`);
+      flushMath(`math-${idx}`);
       if (inCode) {
         out.push(
           <pre
@@ -78,7 +130,6 @@ export function Markdown({ text, className }: { text: string; className?: string
         codeBuffer = [];
         inCode = false;
       } else {
-        flushList(`ul-${idx}`);
         inCode = true;
       }
       return;
@@ -86,6 +137,31 @@ export function Markdown({ text, className }: { text: string; className?: string
 
     if (inCode) {
       codeBuffer.push(raw);
+      return;
+    }
+
+    // A line wholly wrapped in $$...$$ is a display equation.
+    const trimmed = line.trim();
+    if (trimmed.startsWith("$$") && trimmed.endsWith("$$") && trimmed.length > 4) {
+      flushList(`ul-${idx}`);
+      out.push(
+        <div key={`math-${idx}`} className="my-3 flex justify-center">
+          {renderMath(trimmed.slice(2, -2).trim(), true)}
+        </div>,
+      );
+      return;
+    }
+    // Opening line of a multi-line $$ block.
+    if (trimmed.startsWith("$$")) {
+      flushList(`ul-${idx}`);
+      mathBuffer.push(trimmed);
+      return;
+    }
+    if (mathBuffer.length > 0) {
+      mathBuffer.push(trimmed);
+      if (trimmed.endsWith("$$")) {
+        flushMath(`math-${idx}`);
+      }
       return;
     }
 
@@ -136,6 +212,7 @@ export function Markdown({ text, className }: { text: string; className?: string
   });
 
   flushList("ul-end");
+  flushMath("math-end");
   if (inCode && codeBuffer.length) {
     out.push(
       <pre key="code-tail" className="mt-3 overflow-x-auto rounded-xl bg-ink-950 p-4 text-xs text-ink-100">
