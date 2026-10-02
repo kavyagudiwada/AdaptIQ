@@ -75,6 +75,10 @@ chart, so the logic is visible to anyone using it.
 | --- | --- |
 | <img src="docs/screenshots/assessment.png" width="600" alt="Five-question diagnostic assessment" /> | <img src="docs/screenshots/tutor.png" width="600" alt="Level-aware AI tutor chat" /> |
 
+| Ask the tutor: KNN explanation (with rendered maths) |
+| --- |
+| <img src="docs/screenshots/tutor-knn.png" width="600" alt="AI tutor explaining KNN with a worked example and rendered LaTeX formulas" /> |
+
 | Learner profile | Sign in |
 | --- | --- |
 | <img src="docs/screenshots/profile.png" width="600" alt="Learner profile form with level and goal" /> | <img src="docs/screenshots/login.png" width="600" alt="Sign-in page with email/password and Google option" /> |
