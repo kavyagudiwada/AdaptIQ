@@ -11,6 +11,7 @@ import logging
 from typing import Any
 
 from app.ai import prompts
+from app.ai.demo_content import TUTOR_BANK
 from app.ai.llm_service import generate_json_or_none
 from app.core.config import settings
 from app.utils.curriculum import display_name, subtopics_for
@@ -69,6 +70,73 @@ def _normalise(payload: dict[str, Any], level: str) -> dict[str, Any] | None:
     }
 
 
+def _bank_body(
+    *,
+    banked: dict[str, Any],
+    topic: str,
+    subtopic: str,
+    level: str,
+    goal: str,
+    strong: list[str],
+    weak: list[str],
+    learner_question: str,
+) -> dict[str, Any]:
+    """Build an offline tutor response from the curated per-topic bank.
+
+    Personalisation is layered on top of the bank: weak/strong framing, the
+    learner's goal, and a direct answer to their specific question. Bank content
+    is written at a solid default depth; the learner's level only picks the
+    difficulty label so the UI badge stays honest.
+    """
+    is_weak = subtopic.lower() in {w.lower() for w in weak}
+    is_strong = subtopic.lower() in {s.lower() for s in strong}
+    topic_name = display_name(topic)
+
+    gap_note = (
+        "This is one of your weak areas, so take it slowly and re-run the example yourself."
+        if is_weak
+        else (
+            "You already scored well here, so treat this as a refresher that focuses on the details you may have glossed over."
+            if is_strong
+            else "This is new ground for you, so the explanation deliberately starts from first principles."
+        )
+    )
+    goal_note = {
+        "placement": "Interviewers ask about this often, so it is worth memorising cleanly.",
+        "interview": "This is a favourite interview question - practise saying it out loud.",
+        "academic": "This maps directly to the standard syllabus, so focus on the precise definition.",
+        "project": "You will use this in a project, so keep the implementation detail in mind.",
+        "general": "Build the intuition first, then formalise it.",
+    }[goal]
+
+    answer = ""
+    if learner_question:
+        answer = (
+            f"\n\n**On your question** — {learner_question.strip()}.\n"
+            f"Applied to **{subtopic}**: run the worked example above with your own numbers and "
+            f"check the result against the formula by hand once. If it does not match, either the "
+            f"assumptions (e.g. independence or scaling) are violated or a step is glossing over a "
+            f"term you can pinpoint — that is exactly the place to stop and ask again."
+        )
+
+    return {
+        "topic": subtopic,
+        "explanation": (
+            f"{banked['explanation']}\n\n**How this applies to you.** {gap_note} {goal_note}{answer}"
+        ),
+        "example": banked["example"],
+        "key_points": list(banked["key_points"]),
+        "common_mistakes": list(banked["common_mistakes"]),
+        "follow_up_question": banked.get("follow_up_question") or _FOLLOW_UPS.get(
+            level, _FOLLOW_UPS["beginner"]
+        ),
+        "difficulty": {"beginner": "easy", "intermediate": "medium"}.get(
+            level, "hard"
+        ),
+        "personalized_note": f"{gap_note} {goal_note}",
+    }
+
+
 def _demo_body(
     *,
     name: str,
@@ -81,6 +149,19 @@ def _demo_body(
     learner_question: str,
 ) -> dict[str, Any]:
     """Offline explanation that still varies meaningfully by learner."""
+    banked = TUTOR_BANK.get(subtopic.strip().lower())
+    if banked is not None:
+        return _bank_body(
+            banked=banked,
+            topic=topic,
+            subtopic=subtopic,
+            level=level,
+            goal=goal,
+            strong=strong,
+            weak=weak,
+            learner_question=learner_question,
+        )
+
     is_weak = subtopic.lower() in {w.lower() for w in weak}
     is_strong = subtopic.lower() in {s.lower() for s in strong}
     topic_name = display_name(topic)
