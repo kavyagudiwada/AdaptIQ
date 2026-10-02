@@ -52,6 +52,20 @@ chart, so the logic is visible to anyone using it.
 - **Live progress tracking** — mastery per topic, quiz score trend, calibration
   vs. self-rated confidence, and a weekly roadmap check-off.
 
+### Screenshots
+
+| Dashboard (progress, trend, calibration) | Personalised roadmap |
+| --- | --- |
+| <img src="docs/screenshots/dashboard.png" width="600" alt="Progress dashboard with animated mastery bars, quiz score trend and calibration badge" /> | <img src="docs/screenshots/roadmap.png" width="600" alt="Personally generated week-by-week learning roadmap" /> |
+
+| Adaptive assessment | AI tutor |
+| --- | --- |
+| <img src="docs/screenshots/assessment.png" width="600" alt="Five-question diagnostic assessment" /> | <img src="docs/screenshots/tutor.png" width="600" alt="Level-aware AI tutor chat" /> |
+
+| Learner profile | Sign in |
+| --- | --- |
+| <img src="docs/screenshots/profile.png" width="600" alt="Learner profile form with level and goal" /> | <img src="docs/screenshots/login.png" width="600" alt="Sign-in page with Google option" /> |
+
 ---
 
 ## 🛠️ Technologies used
