@@ -60,21 +60,6 @@
   .animate-float {
     animation: float 6s ease-in-out infinite;
   }
-  .animate-aurora {
-    animation: aurora 16s ease-in-out infinite;
-  }
-  .animate-aurora-slow {
-    animation: aurora 26s ease-in-out infinite reverse;
-  }
-  .animate-drift-up {
-    animation: drift-up 14s linear infinite;
-  }
-  .animate-scan {
-    animation: scan 16s linear infinite;
-  }
-  .animate-dash-flow {
-    animation: dash-flow 2.6s linear infinite;
-  }
   .animate-progress-sheen {
     animation: progress-sheen 2.4s linear infinite;
   }
@@ -110,58 +95,6 @@
   }
 }
 
-@keyframes aurora {
-  0%,
-  100% {
-    opacity: 0.45;
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    opacity: 0.85;
-    transform: translate3d(3%, -4%, 0) scale(1.12);
-  }
-}
-
-@keyframes drift-up {
-  0% {
-    opacity: 0;
-    transform: translateY(0) translateX(0);
-  }
-  12% {
-    opacity: 0.8;
-  }
-  88% {
-    opacity: 0.5;
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(calc(var(--drift, 0) * 1px)) translateX(calc(var(--drift-x, 0) * 1px));
-  }
-}
-
-@keyframes scan {
-  0% {
-    opacity: 0;
-    transform: translateY(-10rem);
-  }
-  6% {
-    opacity: 0.6;
-  }
-  94% {
-    opacity: 0.45;
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(110vh);
-  }
-}
-
-@keyframes dash-flow {
-  to {
-    stroke-dashoffset: -24;
-  }
-}
-
 @keyframes progress-sheen {
   from {
     transform: translateX(0) skewX(-20deg);
@@ -175,11 +108,6 @@
   .animate-fade-in,
   .animate-slide-up,
   .animate-float,
-  .animate-aurora,
-  .animate-aurora-slow,
-  .animate-drift-up,
-  .animate-scan,
-  .animate-dash-flow,
   .animate-progress-sheen {
     animation: none;
   }
