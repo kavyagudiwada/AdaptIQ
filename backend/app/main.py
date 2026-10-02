@@ -7,7 +7,6 @@ from pathlib import Path
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import (
     assessment,
@@ -107,29 +106,29 @@ _frontend_index = (
 )
 
 if _frontend_index is not None and _frontend_dir is not None:
-    if (_frontend_dir / "assets").is_dir():
-        app.mount(
-            "/assets",
-            StaticFiles(directory=_frontend_dir / "assets"),
-            name="frontend-assets",
-        )
+    # Real files from the build (hashed assets + anything copied from public/
+    # e.g. img src="/studify.png") must return their actual bytes, so an <img>
+    # gets a PNG image/response. The catch-all below serves files first and
+    # only falls back to index.html for genuinely missing SPA routes. It is
+    # registered after the API routers, so /api/* is unaffected.
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def spa_files(full_path: str):
+        # Unknown /api/* paths that dodge every router must 404, not return
+        # the SPA. /docs and /openapi.json are registered earlier by FastAPI,
+        # so they never reach this catch-all.
+        if full_path.startswith(API_PREFIX.lstrip("/")):
+            from fastapi.responses import JSONResponse
 
-    @app.get("/", include_in_schema=False)
-    async def spa_root():
-        from fastapi.responses import FileResponse
-
-        return FileResponse(_frontend_index)
-
-    @app.exception_handler(404)
-    async def spa_fallback(request: Request, exc: Exception) -> JSONResponse:
-        del exc  # unused
-        if request.url.path.startswith(API_PREFIX):
             return JSONResponse(
                 status_code=status.HTTP_404_NOT_FOUND,
                 content={"detail": "Not found"},
             )
+
         from fastapi.responses import FileResponse
 
+        candidate = (_frontend_dir / full_path).resolve()
+        if candidate.is_relative_to(_frontend_dir) and candidate.is_file():
+            return FileResponse(candidate)
         return FileResponse(_frontend_index)
 
     logger.info("Serving frontend from %s", _frontend_dir)
