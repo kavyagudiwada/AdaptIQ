@@ -54,6 +54,10 @@ chart, so the logic is visible to anyone using it.
 
 ### Screenshots
 
+| Landing page |
+| --- |
+| <img src="docs/screenshots/landing.png" width="600" alt="AdaptIQ landing page introducing the personalised AI tutor" /> |
+
 | Full progress & analysis (mastery, trend, calibration, strengths, roadmap check-off) |
 | --- |
 | <img src="docs/screenshots/progress.png" width="600" alt="Full progress dashboard: overall score, quiz trend with calibration, topic mastery, strengths and roadmap progress" /> |
