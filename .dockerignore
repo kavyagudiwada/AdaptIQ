@@ -1,0 +1,15 @@
+# Root build context (root Dockerfile / Render). Keeps the image small and
+# secrets out of the build context.
+**/.venv
+**/node_modules
+**/__pycache__
+**/*.py[cod]
+**/.env
+**/.env.*
+*.log
+*.err
+**/dist
+**/.pytest_cache
+**/.mypy_cache
+docs/screenshots
+.git

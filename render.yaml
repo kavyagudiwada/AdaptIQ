@@ -1,0 +1,47 @@
+# AdaptIQ - Render Blueprint.
+#
+# Deploys the whole product at one URL (SPA + API are served by a single
+# Docker image) with a managed PostgreSQL database.
+#
+# How to deploy:
+#   1. Push this file to GitHub (done).
+#   2. At https://render.com -> New -> Blueprint, connect this repo.
+#   3. Render provisions the Postgres + web service and opens your site.
+#
+# The web service is free-plan compatible, so it may sleep after ~15 min of
+# inactivity; the first request after a nap takes a few extra seconds.
+
+services:
+  - type: web
+    name: adaptiq
+    runtime: docker
+    repo: https://github.com/kavyagudiwada/AdaptIQ
+    branch: main
+    plan: free
+    region: oregon
+    dockerContext: .
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: adaptiq-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      # Google sign-in is optional and OFF unless you set these in Render's
+      # dashboard (leave blank to keep password auth only).
+      # - key: GOOGLE_CLIENT_ID
+      #   sync: false
+      # - key: GOOGLE_CLIENT_SECRET
+      #   sync: false
+      # Live Gemini answers require an API key (default: curated offline mode).
+      # - key: AI_API_KEY
+      #   sync: false
+
+databases:
+  - name: adaptiq-db
+    plan: free
+    region: oregon
+    databaseName: learnai

@@ -2,10 +2,12 @@
 
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import (
     assessment,
@@ -91,6 +93,46 @@ app.include_router(roadmap.router, prefix=API_PREFIX)
 app.include_router(tutor.router, prefix=API_PREFIX)
 app.include_router(quiz.router, prefix=API_PREFIX)
 app.include_router(progress.router, prefix=API_PREFIX)
+
+
+# --- Optional: serve the built SPA from the API ----------------------------
+# When FRONTEND_DIR points at a `npm run build` output (frontend/dist), the
+# API also hosts the React app so the whole product lives behind one URL. This
+# is how production/Render deployments run; /api/* keeps routing to the API.
+_frontend_dir = Path(settings.frontend_dir).resolve() if settings.frontend_dir else None
+_frontend_index = (
+    (_frontend_dir / "index.html")
+    if _frontend_dir and (_frontend_dir / "index.html").is_file()
+    else None
+)
+
+if _frontend_index is not None and _frontend_dir is not None:
+    if (_frontend_dir / "assets").is_dir():
+        app.mount(
+            "/assets",
+            StaticFiles(directory=_frontend_dir / "assets"),
+            name="frontend-assets",
+        )
+
+    @app.get("/", include_in_schema=False)
+    async def spa_root():
+        from fastapi.responses import FileResponse
+
+        return FileResponse(_frontend_index)
+
+    @app.exception_handler(404)
+    async def spa_fallback(request: Request, exc: Exception) -> JSONResponse:
+        del exc  # unused
+        if request.url.path.startswith(API_PREFIX):
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content={"detail": "Not found"},
+            )
+        from fastapi.responses import FileResponse
+
+        return FileResponse(_frontend_index)
+
+    logger.info("Serving frontend from %s", _frontend_dir)
 
 
 @app.get("/", include_in_schema=False)

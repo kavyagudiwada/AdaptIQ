@@ -14,6 +14,10 @@ class Settings(BaseSettings):
 
     # --- Database -------------------------------------------------------
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/learnai"
+    # Optional path to a built frontend (frontend/dist). When set, the API
+    # serves the SPA too, so the whole app lives behind one URL (used on
+    # production/Render deploys).
+    frontend_dir: str = ""
 
     # --- AI provider ----------------------------------------------------
     ai_provider: str = "gemini"
@@ -43,6 +47,21 @@ class Settings(BaseSettings):
     # Google is `{backend_url}/api/auth/google/callback`.
     google_client_id: str = ""
     google_client_secret: str = ""
+
+    @property
+    def async_database_url(self) -> str:
+        """DATABASE_URL normalised for the async engine.
+
+        Render/Postgres hosters export `postgres://user:pass@host/db` which is
+        the sync scheme; asyncpg requires `postgresql+asyncpg://`. The local
+        default already carries the async scheme, so this is mostly a no-op.
+        """
+        url = self.database_url
+        if url.startswith("postgres://"):
+            return "postgresql+asyncpg://" + url[len("postgres://") :]
+        if url.startswith("postgresql://"):
+            return "postgresql+asyncpg://" + url[len("postgresql://") :]
+        return url
 
     @property
     def google_enabled(self) -> bool:

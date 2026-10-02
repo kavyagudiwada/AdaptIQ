@@ -1,7 +1,9 @@
 import axios, { AxiosError } from "axios";
 
-export const API_URL: string =
-  import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000";
+/** Base URL of the backend. Defaults to same-origin ("/api") so a single
+ *  deployed origin serves both the SPA and its API. Dev machines override
+ *  this with VITE_API_URL in frontend/.env (e.g. http://127.0.0.1:8000). */
+export const API_URL: string = import.meta.env.VITE_API_URL ?? "";
 
 export const api = axios.create({
   baseURL: `${API_URL}/api`,
