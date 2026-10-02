@@ -1,0 +1,198 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: #eef4ff;
+  --color-brand-100: #d9e5ff;
+  --color-brand-200: #bcd2ff;
+  --color-brand-300: #8eb5ff;
+  --color-brand-400: #598eff;
+  --color-brand-500: #3366ff;
+  --color-brand-600: #1f45f5;
+  --color-brand-700: #1a34e1;
+  --color-brand-800: #1c2db6;
+  --color-brand-900: #1c2b8f;
+  --color-brand-950: #151d57;
+
+  --color-ink-50: #f6f7f9;
+  --color-ink-100: #eceef2;
+  --color-ink-200: #d5dae3;
+  --color-ink-300: #b0b9c9;
+  --color-ink-400: #8592a9;
+  --color-ink-500: #66738d;
+  --color-ink-600: #515c74;
+  --color-ink-700: #424a5d;
+  --color-ink-800: #39404e;
+  --color-ink-900: #171a21;
+  --color-ink-950: #0d0f14;
+
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, sans-serif;
+  --font-display: "Sora", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, sans-serif;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-[#04060f] text-ink-900 antialiased;
+    font-family: var(--font-sans);
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+  * {
+    @apply border-ink-200;
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fade-in 0.35s ease-out both;
+  }
+  .animate-slide-up {
+    animation: slide-up 0.4s ease-out both;
+  }
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  .animate-aurora {
+    animation: aurora 16s ease-in-out infinite;
+  }
+  .animate-aurora-slow {
+    animation: aurora 26s ease-in-out infinite reverse;
+  }
+  .animate-drift-up {
+    animation: drift-up 14s linear infinite;
+  }
+  .animate-scan {
+    animation: scan 16s linear infinite;
+  }
+  .animate-dash-flow {
+    animation: dash-flow 2.6s linear infinite;
+  }
+  .animate-progress-sheen {
+    animation: progress-sheen 2.4s linear infinite;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes aurora {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: translate3d(3%, -4%, 0) scale(1.12);
+  }
+}
+
+@keyframes drift-up {
+  0% {
+    opacity: 0;
+    transform: translateY(0) translateX(0);
+  }
+  12% {
+    opacity: 0.8;
+  }
+  88% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(calc(var(--drift, 0) * 1px)) translateX(calc(var(--drift-x, 0) * 1px));
+  }
+}
+
+@keyframes scan {
+  0% {
+    opacity: 0;
+    transform: translateY(-10rem);
+  }
+  6% {
+    opacity: 0.6;
+  }
+  94% {
+    opacity: 0.45;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(110vh);
+  }
+}
+
+@keyframes dash-flow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+@keyframes progress-sheen {
+  from {
+    transform: translateX(0) skewX(-20deg);
+  }
+  to {
+    transform: translateX(600%) skewX(-20deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-slide-up,
+  .animate-float,
+  .animate-aurora,
+  .animate-aurora-slow,
+  .animate-drift-up,
+  .animate-scan,
+  .animate-dash-flow,
+  .animate-progress-sheen {
+    animation: none;
+  }
+}
+
+/* Thin scrollbar for chat panes */
+.scroll-slim::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scroll-slim::-webkit-scrollbar-thumb {
+  @apply rounded-full bg-ink-300;
+}
+.scroll-slim::-webkit-scrollbar-track {
+  background: transparent;
+}
