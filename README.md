@@ -8,6 +8,11 @@ every practice question.
 Live demo flow: **profile → assessment → personalised roadmap → AI tutor →
 adaptive quiz → progress dashboard**.
 
+> 🌍 **Live:** the full product runs at
+> **[https://adaptiq-fh88.onrender.com](https://adaptiq-fh88.onrender.com)** —
+> SPA + API + Postgres on one URL (free Render tier, may take ~10 s to wake
+> after being idle).
+
 ---
 
 ## 💡 Project overview
