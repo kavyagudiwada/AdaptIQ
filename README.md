@@ -99,8 +99,13 @@ chart, so the logic is visible to anyone using it.
 
 ### Prerequisites
 
-- **Python 3.11+** and **Node.js 18+** (npm)
-- **PostgreSQL** running locally (any version ≥ 14)
+Pick one:
+
+- **Fastest (Docker only):** just [Docker](https://www.docker.com/products/docker-desktop/)
+  installed, then `docker compose up --build`.
+- **Local (no Docker):** **Python 3.11+**, **Node.js 18+** (npm), and a local
+  **PostgreSQL** instance (≥ 14). Then `run.bat` (Windows) or `./run.sh`
+  (macOS/Linux) handles the rest.
 
 ### 1. Clone the repository
 
@@ -169,6 +174,46 @@ VITE_API_URL=http://localhost:8000
 ---
 
 ## 🚀 How to run the project
+
+There are three ways to run it — pick whichever fits the machine:
+
+### Option A — Docker (one command, recommended for demos)
+
+Needs only [Docker](https://www.docker.com/products/docker-desktop/):
+
+```bash
+docker compose up --build
+```
+
+This starts PostgreSQL, runs the migrations, and launches both servers. Open
+<http://localhost:5173>. Nothing else needs installing.
+
+- Live Gemini answers (optional): `AI_API_KEY=your_key docker compose up --build`
+- Stop: `Ctrl+C`, then `docker compose down`
+- Reset all data: `docker compose down -v`
+- The PostgreSQL port is mapped to **5433** on the host so it won't clash with a
+  local install.
+
+### Option B — one-command scripts (needs Python + Node + local PostgreSQL)
+
+From the repo root, double-click / run the helper script. It creates the venv,
+installs dependencies, creates the `learnai` database if missing, applies
+migrations and starts both servers:
+
+```bash
+# Windows
+run.bat
+
+# macOS / Linux
+./run.sh
+```
+
+Then open <http://localhost:5173>.
+
+### Option C — manual (terminal by terminal)
+
+Prerequisites: a running PostgreSQL instance and `DATABASE_URL` pointing at it
+in `backend/.env` (see [Setup](#⚙️-setup--installation) above).
 
 With two terminals:
 
@@ -303,6 +348,9 @@ AdaptIQ/
 │   │   └── main.py               # FastAPI app, CORS, lifespan, routers
 │   ├── .env.example
 │   ├── alembic.ini
+│   ├── scripts/
+│   │   └── bootstrap.py           # create DB if missing + apply migrations
+│   ├── Dockerfile
 │   └── requirements.txt
 ├── frontend/
 │   ├── src/
@@ -316,7 +364,13 @@ AdaptIQ/
 │   │   ├── App.tsx               # routes, lazy-loaded pages
 │   │   └── main.tsx
 │   ├── .env.example
+│   ├── Dockerfile
 │   └── package.json
+├── docs/
+│   └── screenshots/              # product screenshots for the README
+├── docker-compose.yml            # one-command Docker demo (db + api + web)
+├── run.bat                       # one-command setup (Windows)
+├── run.sh                        # one-command setup (macOS / Linux)
 └── README.md
 ```
 

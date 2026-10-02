@@ -1,0 +1,51 @@
+# AdaptIQ - one-command demo with Docker.
+#   docker compose up --build
+# Then open http://localhost:5173. PostgreSQL + API + frontend start together
+# and the schema is migrated automatically.
+#
+# Optional: enable live Gemini answers with
+#   AI_API_KEY=your_key docker compose up --build
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: adaptiq
+      POSTGRES_DB: learnai
+    # Mapped to 5433 on the host so a local PostgreSQL on 5432 does not clash.
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d learnai"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:adaptiq@db:5432/learnai
+      AI_PROVIDER: gemini
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_MODEL: gemini-2.5-flash
+      FRONTEND_URL: http://localhost:5173
+    ports:
+      - "8000:8000"
+
+  web:
+    build:
+      context: ./frontend
+    depends_on:
+      - api
+    environment:
+      VITE_API_URL: http://localhost:8000
+    ports:
+      - "5173:5173"
+
+volumes:
+  pgdata:
